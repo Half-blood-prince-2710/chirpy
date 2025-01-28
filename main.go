@@ -6,7 +6,9 @@ import (
 	"sync/atomic"
 )
 
-
+type apiConfig struct {
+	fileserverHots atomic.Int32
+}
 
 func main() {
 	 mux := http.NewServeMux()
