@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/half-blood-prince-2710/chirpy/internal/database"
+	// "github.com/half-blood-prince-2710/chirpy/internal/database"
 )
 
 
@@ -148,7 +148,15 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		ServerErrorResponse(w)
 		return
 	}
-	
+	var output struct {
+		Body string `json:"body"`
+		CreatedAt time.Time `json:"created_at`
+		ID uuid.UUID `json:"id"`
+		UpdatedAt time.Time `json:"updated_at"`
+		UserID uuid.UUID `json:"user_id"`
+	}
+	output.Body = chirp.Body
+	output.ID = chirp.ID
 	w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-type","application/json")
 		success.Valid = true
@@ -185,6 +193,7 @@ func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 		ServerErrorResponse(w)
 	}
 	chirp,err:= cfg.db.GetOneChirp(r.Context(),idx)
+	slog.Info("chirp",chirp)
 	dbErrorReponse(err,w)
 
 	w.WriteHeader(http.StatusOK)
