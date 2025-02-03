@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
+
 )
 
 
@@ -43,6 +45,9 @@ func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Reques
 	var success struct {
 		Valid bool
 	}	
+	var cleanedBody struct {
+		Cleaned_Body string `json="cleaned_body"`
+	}
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err!=nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -71,16 +76,22 @@ func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Reques
 		w.Write(dat)
 		return
 	}
-
+	bannedWords:= []string{"kerfuffle","sharbert","fornax"}
+	for _,word := range bannedWords {
+		re := regexp.MustCompile(`\b(?i)` + word + `\b`)
+		input.Body=re.ReplaceAllString(input.Body,"****")
+	}
+	cleanedBody.Cleaned_Body = input.Body
 	w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-type","application/json")
 		success.Valid = true
-		dat,err := json.Marshal(success)
+		dat,err := json.Marshal(cleanedBody)
 		if err != nil {
 			log.Printf("Error marshalling JSON: %s", err)
 			w.WriteHeader(500)
 			return
 	}
-		w.Write(dat)
+		
+	w.Write(dat)
 
 }
