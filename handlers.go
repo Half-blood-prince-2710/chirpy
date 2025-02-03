@@ -44,8 +44,54 @@ func (cfg *apiConfig) metricHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Request) {
 
+
+// USER HANDLERS
+
+
+func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Email string `json:"email"`
+	}
+	var output struct {
+		ID uuid.UUID `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+		Email string `json:"email"`
+	}
+	var errr errror
+	w.Header().Set("Content-Type","application/json")
+	err:= json.NewDecoder(r.Body).Decode(&input)
+	if err!=nil{
+		badRequestErrorResponse(w,http.StatusBadRequest,errr)
+	}
+	slog.Info("email",input.Email)
+	user,err:= cfg.db.CreateUser(r.Context(),input.Email)
+	if err!=nil{
+		ServerErrorResponse(w)
+	}
+	output.ID = user.ID
+	output.CreatedAt = user.CreatedAt.Time
+	output.UpdatedAt = user.UpdatedAt.Time
+	output.Email = user.Email
+	slog.Info("user",user)
+
+	data, err:= json.Marshal(output)
+	w.WriteHeader(http.StatusCreated)
+	w.Write(data)
+
+
+}
+
+
+
+
+
+
+//Chirp HANDLERS
+
+
+func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Body string `json:"body"`
 	}
@@ -103,43 +149,4 @@ func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Reques
 	}
 		
 	w.Write(dat)
-
-}
-
-
-// USER HANDLERS
-
-
-func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		Email string `json:"email"`
-	}
-	var output struct {
-		ID uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email string `json:"email"`
-	}
-	var errr errror
-	w.Header().Set("Content-Type","application/json")
-	err:= json.NewDecoder(r.Body).Decode(&input)
-	if err!=nil{
-		badRequestErrorResponse(w,http.StatusBadRequest,errr)
-	}
-	slog.Info("email",input.Email)
-	user,err:= cfg.db.CreateUser(r.Context(),input.Email)
-	if err!=nil{
-		ServerErrorResponse(w)
-	}
-	output.ID = user.ID
-	output.CreatedAt = user.CreatedAt.Time
-	output.UpdatedAt = user.UpdatedAt.Time
-	output.Email = user.Email
-	slog.Info("user",user)
-
-	data, err:= json.Marshal(output)
-	w.WriteHeader(http.StatusCreated)
-	w.Write(data)
-
-
 }
