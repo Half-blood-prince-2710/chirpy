@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	// "github.com/half-blood-prince-2710/chirpy/internal/database"
+	"github.com/half-blood-prince-2710/chirpy/internal/database"
 )
 
 
@@ -72,8 +72,8 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		ServerErrorResponse(w)
 	}
 	output.ID = user.ID
-	output.CreatedAt = user.CreatedAt.Time
-	output.UpdatedAt = user.UpdatedAt.Time
+	output.CreatedAt = user.CreatedAt
+	output.UpdatedAt = user.UpdatedAt
 	output.Email = user.Email
 	slog.Info("user",user)
 
@@ -95,7 +95,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Body string `json:"body"`
-		UserId uuid.NullUUID `json:"user_id"`
+		UserId uuid.UUID `json:"user_id"`
 	}
 	var er struct{
 		Error  string `json:"error"`
@@ -149,18 +149,21 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	var output struct {
-		Body string `json:"body"`
-		CreatedAt time.Time `json:"created_at`
 		ID uuid.UUID `json:"id"`
+		CreatedAt time.Time `json:"created_at`
 		UpdatedAt time.Time `json:"updated_at"`
+		Body string `json:"body"`
 		UserID uuid.UUID `json:"user_id"`
 	}
 	output.Body = chirp.Body
 	output.ID = chirp.ID
+	output.CreatedAt = chirp.CreatedAt
+	output.UpdatedAt = chirp.UpdatedAt
+	output.UserID = chirp.UserID
 	w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-type","application/json")
 		success.Valid = true
-		dat,err := json.Marshal(chirp)
+		dat,err := json.Marshal(output)
 		if err != nil {
 			log.Printf("Error marshalling JSON: %s", err)
 			w.WriteHeader(500)
