@@ -149,7 +149,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-type","application/json")
 		success.Valid = true
 		dat,err := json.Marshal(chirp)
