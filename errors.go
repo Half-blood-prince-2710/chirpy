@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 )
 
@@ -23,4 +24,11 @@ func badRequestErrorResponse(w http.ResponseWriter,  status int , errr errror){
 		ServerErrorResponse(w)
 	}
 	w.Write(dat)
+}
+func dbErrorReponse(err error,w http.ResponseWriter) {
+	if err!=nil{
+		slog.Error("err: ",err)
+		ServerErrorResponse(w)
+		return
+	}
 }

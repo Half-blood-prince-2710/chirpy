@@ -162,3 +162,16 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 	w.Write(dat)
 }
 
+func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
+	chirps,err:= cfg.db.GetAllChirps(r.Context())
+	dbErrorReponse(err,w)
+
+	w.WriteHeader(http.StatusOK)
+	data,err := json.Marshal(chirps)
+	if err != nil {
+			log.Printf("Error marshalling JSON: %s", err)
+			w.WriteHeader(500)
+			return
+	}
+	w.Write(data)
+}

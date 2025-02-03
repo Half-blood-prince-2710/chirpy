@@ -58,7 +58,7 @@ func main() {
 
 	//chirps routes
 	mux.HandleFunc("POST /api/chirps",apiCfg.createChirpHandler)
-	mux.HandleFunc("GET /api/chirps",apiCfg)
+	mux.HandleFunc("GET /api/chirps",apiCfg.getChirpsHandler)
 
 	// Start HTTP server
 	srv := &http.Server{
