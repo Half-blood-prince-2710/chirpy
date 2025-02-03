@@ -55,7 +55,10 @@ func main() {
 
 	// user routes
 	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
+
+	//chirps routes
 	mux.HandleFunc("POST /api/chirps",apiCfg.createChirpHandler)
+	mux.HandleFunc("GET /api/chirps",apiCfg)
 
 	// Start HTTP server
 	srv := &http.Server{
