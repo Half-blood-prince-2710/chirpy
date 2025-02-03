@@ -57,8 +57,8 @@ func (cfg *apiConfig) validateChirpHandler(w http.ResponseWriter, r *http.Reques
 		w.Write(dat)
 		return
 	}
-
-	if len(input.Body) >40 {
+	// fmt.Print(len(input.Body),"\n","body",input.Body,"\n")
+	if len(input.Body) >140 {
 			w.WriteHeader(400)
 		w.Header().Set("Content-type","application/json")
 		er.Error = "Chirp is too long"
