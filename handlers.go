@@ -104,8 +104,13 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 	var input struct {
 		Email string `json="email"`
 	}
+	
+	var errr errror
+	w.Header().Set("Content-Type","application/json")
 	err:= json.NewDecoder(r.Body).Decode(&input)
 	if err!=nil{
-		
+		badRequestErrorResponse(w,http.StatusBadRequest,errr)
 	}
+	cfg.dbQueries.
+
 }
