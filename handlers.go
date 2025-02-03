@@ -20,7 +20,11 @@ func (cfg *apiConfig)  healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
+	if cfg.env != "dev"{
+		w.WriteHeader(http.StatusForbidden)
+	}
 	cfg.fileserverHits.Store(0)
+	cfg.db.
 }
 
 func (cfg *apiConfig) metricHandler(w http.ResponseWriter, r *http.Request) {

@@ -16,6 +16,7 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db              *database.Queries // Initialize db as a pointer to database.Queries
+	env string
 }
 
 func main() {
@@ -39,7 +40,8 @@ func main() {
 
 	// Initialize the apiConfig object and assign the Queries object to db
 	apiCfg := apiConfig{
-		db: database.New(db), // Initialize Queries with the database connection
+		db: database.New(db),
+		env: os.Getenv("PLATFORM"), // Initialize Queries with the database connection
 	}
 
 	// HTTP router setup
