@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/half-blood-prince-2710/chirpy/internal/database"
 )
 
 
@@ -94,6 +95,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Body string `json:"body"`
+		UserId uuid.NullUUID `json:"user_id"`
 	}
 	var er struct{
 		Error  string `json:"error"`
@@ -101,9 +103,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 	var success struct {
 		Valid bool
 	}	
-	var cleanedBody struct {
-		Cleaned_Body string `json:"cleaned_body"`
-	}
+	
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err!=nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -137,11 +137,19 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		re := regexp.MustCompile(`\b(?i)` + word + `\b`)
 		input.Body=re.ReplaceAllString(input.Body,"****")
 	}
-	cleanedBody.Cleaned_Body = input.Body
+	ch:=database.CreateChirpParams{
+		Body: input.Body,
+		UserID: input.UserId,
+	}
+	chirp , err:= cfg.db.CreateChirp(r.Context(),ch)
+	if err!=nil{
+		ServerErrorResponse(w)
+	}
+	
 	w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-type","application/json")
 		success.Valid = true
-		dat,err := json.Marshal(cleanedBody)
+		dat,err := json.Marshal(chirp)
 		if err != nil {
 			log.Printf("Error marshalling JSON: %s", err)
 			w.WriteHeader(500)
