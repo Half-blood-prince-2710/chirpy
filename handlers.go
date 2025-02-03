@@ -141,9 +141,12 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		Body: input.Body,
 		UserID: input.UserId,
 	}
+	slog.Info("chirp",ch)
 	chirp , err:= cfg.db.CreateChirp(r.Context(),ch)
 	if err!=nil{
+		slog.Error("err: ",err)
 		ServerErrorResponse(w)
+		return
 	}
 	
 	w.WriteHeader(http.StatusOK)
