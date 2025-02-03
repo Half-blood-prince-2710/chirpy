@@ -120,7 +120,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		badRequestErrorResponse(w,http.StatusBadRequest,errr)
 	}
 	slog.Info("email",input.Email)
-	user,err:=cfg.db.CreateUser(r.Context(),input.Email)
+	user,err:= cfg.db.CreateUser(r.Context(),input.Email)
 	if err!=nil{
 		ServerErrorResponse(w)
 	}
@@ -128,6 +128,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 	output.CreatedAt = user.CreatedAt.Time
 	output.UpdatedAt = user.UpdatedAt.Time
 	output.Email = user.Email
+	slog.Info("user",user)
 
 	data, err:= json.Marshal(output)
 	w.WriteHeader(http.StatusCreated)

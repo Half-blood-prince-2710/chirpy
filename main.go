@@ -15,35 +15,47 @@ import (
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
-	db *database.Queries
+	db              *database.Queries // Initialize db as a pointer to database.Queries
 }
 
 func main() {
-	// loading environment variables 
-	godotenv.Load()
-	dbURL := os.Getenv("DB_URL")
+	// Loading environment variables
+	err := godotenv.Load()
+	if err != nil {
+		slog.Error("Error loading .env file")
+	}
 
-	// database connection
+	dbURL := os.Getenv("DB_URL")
+	slog.Info("db_url", dbURL)
+
+	// Database connection
 	db, err := sql.Open("postgres", dbURL)
-	if err!=nil {
-		slog.Error("Error connecting database")
+	if err != nil {
+		slog.Error("Error connecting to database:", err)
 	}
 	defer db.Close()
 
-	apiCfg := apiConfig{}
+	slog.Info("Database Connected")
+
+	// Initialize the apiConfig object and assign the Queries object to db
+	apiCfg := apiConfig{
+		db: database.New(db), // Initialize Queries with the database connection
+	}
+
+	// HTTP router setup
 	mux := http.NewServeMux()
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir("./")))))
 	mux.HandleFunc("GET /api/healthz", apiCfg.healthHandler)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metricHandler)
 	mux.HandleFunc("POST /admin/reset", apiCfg.resetHandler)
-	mux.HandleFunc("POST /api/validate_chirp",apiCfg.validateChirpHandler)
-	mux.HandleFunc("POST /api/users",apiCfg.createUserHandler)
+	mux.HandleFunc("POST /api/validate_chirp", apiCfg.validateChirpHandler)
+	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
 
+	// Start HTTP server
 	srv := &http.Server{
 		Handler: mux,
 		Addr:    ":8080",
 	}
-	// log.Printf("Serving files from %s on port: %s\n", filepathRoot, port)
+	slog.Info("server started...")
 	log.Fatal(srv.ListenAndServe())
-
 }
