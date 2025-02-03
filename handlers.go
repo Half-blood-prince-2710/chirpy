@@ -24,7 +24,10 @@ func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 	}
 	cfg.fileserverHits.Store(0)
-	cfg.db.
+	err:=cfg.db.DeleteAllUsers(r.Context())
+	if err!=nil{
+		ServerErrorResponse(w)
+	}
 }
 
 func (cfg *apiConfig) metricHandler(w http.ResponseWriter, r *http.Request) {
