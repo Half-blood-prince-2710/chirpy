@@ -178,11 +178,17 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
-	chirps,err:= cfg.db.GetAllChirps(r.Context())
+	id:=r.PathValue("id")
+	idx, err:=uuid.Parse(id)
+	if err!=nil{
+		slog.Error("err","err parsing uuid")
+		ServerErrorResponse(w)
+	}
+	chirp,err:= cfg.db.GetOneChirp(r.Context(),idx)
 	dbErrorReponse(err,w)
 
 	w.WriteHeader(http.StatusOK)
-	data,err := json.Marshal(chirps)
+	data,err := json.Marshal(chirp)
 	if err != nil {
 			log.Printf("Error marshalling JSON: %s", err)
 			w.WriteHeader(500)
