@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/half-blood-prince-2710/chirpy/internal/auth"
 	"github.com/half-blood-prince-2710/chirpy/internal/database"
 )
 
@@ -53,6 +54,7 @@ func (cfg *apiConfig) metricHandler(w http.ResponseWriter, r *http.Request) {
 func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Email string `json:"email"`
+		Password string `json:"password"`
 	}
 	var output struct {
 		ID uuid.UUID `json:"id"`
@@ -66,8 +68,16 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 	if err!=nil{
 		badRequestErrorResponse(w,http.StatusBadRequest,errr)
 	}
+	hash,err:=auth.HashPassword(input.Password)
+	if err!=nil{
+		ServerErrorResponse(w)
+	}
+	dat:=database.CreateUserParams{
+		Email: input.Email,
+		HashedPassword: hash,
+	}
 	slog.Info("email",input.Email)
-	user,err:= cfg.db.CreateUser(r.Context(),input.Email)
+	user,err:= cfg.db.CreateUser(r.Context(),dat)
 	if err!=nil{
 		ServerErrorResponse(w)
 	}
@@ -209,3 +219,59 @@ func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// AUTH HANDLERS
+
+func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Email string `json:"email"`
+		Password string `json:"password"`
+	}
+	// var output struct {
+	// 	ID uuid.UUID `json:"id"`
+	// 	CreatedAt time.Time `json:"created_at"`
+	// 	UpdatedAt time.Time `json:"updated_at"`
+	// 	Email string `json:"email"`
+	// }
+	var errr errror
+	w.Header().Set("Content-Type","application/json")
+	err:= json.NewDecoder(r.Body).Decode(&input)
+	if err!=nil{
+		badRequestErrorResponse(w,http.StatusBadRequest,errr)
+	}
+	auth.CheckPasswordHash()
+}
