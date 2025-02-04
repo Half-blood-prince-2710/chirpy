@@ -361,3 +361,13 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(dat)
 }
+
+
+func (cfg *apiConfig) refreshTokenHandler(w http.ResponseWriter, r *http.Request) {
+	token , err :=auth.GetBearerToken(r.Header)
+	if err!=nil {
+		unauthorizedErrorResponse(w,"no refresh token")
+		return 
+	}
+	
+}

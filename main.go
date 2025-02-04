@@ -62,6 +62,7 @@ func main() {
 
 	//auth routes
 	mux.HandleFunc("POST /api/login",apiCfg.loginHandler)
+	mux.HandleFunc("POST /api/refresh",)
 
 	// user routes
 	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
