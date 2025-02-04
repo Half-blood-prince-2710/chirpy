@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -382,8 +383,10 @@ func (cfg *apiConfig) refreshTokenHandler(w http.ResponseWriter, r *http.Request
 		unauthorizedErrorResponse(w, "refresh token expired")
 		return
 	}
-	if refreshToken.RevokedAt !=nil {
-		
+	if refreshToken.RevokedAt.Valid {
+		slog.Error("refresh token is revoked")
+		unauthorizedErrorResponse(w, "revoked refresh token")
+		return
 	}
 	accessToken, err := auth.MakeJWT(refreshToken.UserID, cfg.envi.jwtSecret)
 	if err != nil {
@@ -414,7 +417,7 @@ func (cfg *apiConfig) revokeRefreshTokenHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 	data := database.UpdateRefreshTokenParams{
-		ExpiresAt: time.Now(),
+		RevokedAt: sql.NullTime{Time: time.Now(),Valid: true},
 		UpdatedAt: time.Now(),
 		Token: token,
 
