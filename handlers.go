@@ -331,10 +331,10 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		ServerErrorResponse(w)
 		return
 	}
-	data := &database.CreateRefreshTokenParams{
+	data := database.CreateRefreshTokenParams{
 		Token: refreshToken,
 		UserID: user.ID,
-		ExpiresAt: time.Now().After(time.Hour*24*60),
+		ExpiresAt: time.Now().Add(time.Hour*24*60),
 
 	}
 	cfg.db.CreateRefreshToken(r.Context(),data)
