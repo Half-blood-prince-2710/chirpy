@@ -403,3 +403,14 @@ func (cfg *apiConfig) refreshTokenHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 }
+
+
+func (cfg *apiConfig) revokeRefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		unauthorizedErrorResponse(w, "no refresh token")
+		return
+	}
+	
+
+}
