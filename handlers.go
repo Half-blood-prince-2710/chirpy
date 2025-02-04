@@ -411,6 +411,16 @@ func (cfg *apiConfig) revokeRefreshTokenHandler(w http.ResponseWriter, r *http.R
 		unauthorizedErrorResponse(w, "no refresh token")
 		return
 	}
-	
+	data := database.UpdateRefreshTokenParams{
+		ExpiresAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Token: token,
 
+	}
+	err =cfg.db.UpdateRefreshToken(r.Context(),data)
+	if err!=nil {
+		dbErrorReponse(err,w)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
