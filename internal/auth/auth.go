@@ -34,6 +34,7 @@ func CheckPasswordHash(password, hash string) error {
 
 
 func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string,error) {
+	fmt.Print("makejwt: userid ",userID,"\n expiresin",expiresIn,"\n\n")
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,&jwt.RegisteredClaims{
 		Issuer: "chirpy",
 		IssuedAt: jwt.NewNumericDate(time.Now()),
@@ -67,6 +68,7 @@ func ValidateJWT(tokenString string, tokenSecret string) (uuid.UUID,error){
 	if !ok {
 		return uuid.Nil , fmt.Errorf("invalid claims format")
 	}
+	// fmt.Print("\n\n validatejwt:  claims subject: ",claims.Subject,"\n\n")
 	userID,err := uuid.Parse(claims.Subject)
 	if err!=nil {
 		return uuid.Nil , fmt.Errorf("invalid user ID in token: %w",err)
@@ -80,7 +82,12 @@ func GetBearerToken(header http.Header) (string,error) {
 	if str== "" {
 		return "",fmt.Errorf("no token")
 	}
-	token := strings.TrimPrefix(str,"Bearer")
+	token := strings.TrimSpace(strings.TrimPrefix(str,"Bearer"))
+	if token == "" {
+		return "", fmt.Errorf("token is empty after trimming")
+	}
+
 	return token ,nil
 
 }
+

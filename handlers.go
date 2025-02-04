@@ -91,7 +91,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 	output.Email = user.Email
 	slog.Info("Response: ","user",user)
 
-	data, err:= json.Marshal(output)
+	data, err:= json.MarshalIndent(output," ","\t")
 	if err!=nil {
 		ServerErrorResponse(w)
 		return
@@ -127,7 +127,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-type","application/json")
 		er.Error = "Something went wrong"
-		dat,err := json.Marshal(er)
+		dat,err := json.MarshalIndent(er," ","\t")
 		if err != nil {
 			log.Printf("Error marshalling JSON: %s", err)
 			w.WriteHeader(500)
@@ -136,12 +136,21 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		w.Write(dat)
 		return
 	}
-	// fmt.Print(len(input.Body),"\n","body",input.Body,"\n")
+	
+	// userId := r.Context().Value("userID")
+	// input.UserId = uuid.Parse(userId)
+	 userID, ok := r.Context().Value("userID").(uuid.UUID)
+	  if !ok {
+        http.Error(w, "UserID not found in context", http.StatusInternalServerError)
+        return
+    }
+	input.UserId = userID
+	fmt.Print("\n","body",input.Body,"\n userid",input.UserId,"\n")
 	if len(input.Body) >140 {
 			w.WriteHeader(400)
 		w.Header().Set("Content-type","application/json")
 		er.Error = "Chirp is too long"
-		dat,err := json.Marshal(er)
+		dat,err := json.MarshalIndent(er," ","\t")
 		if err != nil {
 			log.Printf("Error marshalling JSON: %s", err)
 			w.WriteHeader(500)
@@ -180,7 +189,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-type","application/json")
 		// success.Valid = true
-		dat,err := json.Marshal(output)
+		dat,err := json.MarshalIndent(output," ","\t")
 		if err != nil {
 			log.Printf("Error marshalling JSON: %s", err)
 			w.WriteHeader(500)
@@ -200,7 +209,7 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	
 
 	w.WriteHeader(http.StatusOK)
-	data,err := json.Marshal(chirps)
+	data,err := json.MarshalIndent(chirps," ","\t")
 	if err != nil {
 			log.Printf("Error marshalling JSON: %s", err)
 			w.WriteHeader(500)
@@ -223,7 +232,7 @@ func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 	dbErrorReponse(err,w)
 
 	w.WriteHeader(http.StatusOK)
-	data,err := json.Marshal(chirp)
+	data,err := json.MarshalIndent(chirp," ","\t")
 	if err != nil {
 			log.Printf("Error marshalling JSON: %s", err)
 			w.WriteHeader(500)
@@ -291,9 +300,10 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		badRequestErrorResponse(w)
 		return
 	}
+	// fmt.Print("login expires 1: ",input.Expires,"\n")
 	//validating expire input
-	if input.Expires ==0 && input.Expires> 60*60 {
-		input.Expires = 60*60
+	if input.Expires ==0 || input.Expires> 60*60 {
+		input.Expires = 3600 
 	}
 
 	user,err:=cfg.db.FindUserByEmail(r.Context(),input.Email)
@@ -307,7 +317,8 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		unauthorizedErrorResponse(w,err.Error())
 		return
 	}
-	token , err:= auth.MakeJWT(user.ID,cfg.envi.jwtSecret,time.Duration(input.Expires))
+	// fmt.Print("expireins login handler: ", input.Expires,"\n")
+	token , err:= auth.MakeJWT(user.ID,cfg.envi.jwtSecret,time.Duration(input.Expires * int(time.Second)))
 	if err!=nil {
 		unauthorizedErrorResponse(w,err.Error())
 		slog.Error("make jwt: ","err: ",err)
@@ -322,7 +333,7 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	dat,err:= json.Marshal(resUser)
+	dat,err:= json.MarshalIndent(resUser," ","\t")
 	if err!=nil {
 		ServerErrorResponse(w)
 		return

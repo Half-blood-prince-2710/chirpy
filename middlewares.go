@@ -3,6 +3,7 @@ package main
 import (
 	// "log"
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -26,18 +27,24 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 // }
 
 
-func (cfg *apiConfig) authenticateMiddleware(next http.Handler) http.Handler {
+func (cfg *apiConfig) authenticateMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// fmt.Print("entering auth middle\n")
 		token , err:=auth.GetBearerToken(r.Header)
 		if err!=nil {
+			fmt.Errorf("Error: %w \n",err)
 			unauthorizedErrorResponse(w,err.Error())
 			slog.Error("Error: get bearer token ","err",err)
+			return 
 		}
+		// fmt.Print("entering auth middle\ntoken:",token,"\n")
 		id,err:=auth.ValidateJWT(token,cfg.envi.jwtSecret)
 		if err!=nil {
+			fmt.Errorf("Error: %w \n",err)
 			unauthorizedErrorResponse(w, err.Error())
+			return 
 		}
-
+		// fmt.Print("entering auth middle\nid: ",id,"\n")
 		ctx := context.WithValue(r.Context(), "userID", id)
 		req := r.WithContext(ctx)
 		next.ServeHTTP(w,req)
