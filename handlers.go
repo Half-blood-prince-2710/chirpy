@@ -261,20 +261,40 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		Email string `json:"email"`
 		Password string `json:"password"`
 	}
-	// var output struct {
-	// 	ID uuid.UUID `json:"id"`
-	// 	CreatedAt time.Time `json:"created_at"`
-	// 	UpdatedAt time.Time `json:"updated_at"`
-	// 	Email string `json:"email"`
-	// }
+	type output struct {
+		ID uuid.UUID `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+		Email string `json:"email"`
+	}
+	
 	var errr errror
+	
 	w.Header().Set("Content-Type","application/json")
 	err:= json.NewDecoder(r.Body).Decode(&input)
 	if err!=nil{
 		badRequestErrorResponse(w,http.StatusBadRequest,errr)
 	}
 	user,err:=cfg.db.FindUserByEmail(r.Context(),input.Email)
-	dbErrorReponse(err,w)
+	if err!=nil {
+		unauthorizedErrorResponse(errr,w)
+	}
 
-	auth.CheckPasswordHash(input.Password,user.)
+	err =auth.CheckPasswordHash(input.Password,user.HashedPassword)
+	if err!=nil {
+		unauthorizedErrorResponse(errr,w)
+	}
+	resUser:=  output{
+		ID: user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Email: user.Email,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	dat,err:= json.Marshal(resUser)
+	if err!=nil {
+		ServerErrorResponse(w)
+	}
+	w.Write(dat)
 }

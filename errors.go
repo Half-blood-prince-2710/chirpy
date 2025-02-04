@@ -32,3 +32,13 @@ func dbErrorReponse(err error,w http.ResponseWriter) {
 		return
 	}
 }
+
+func unauthorizedErrorResponse(errr errror,w http.ResponseWriter) {
+	errr.msg = "Incorrect Email or password"
+	dat,err:=json.Marshal(errr)
+	if err!=nil {
+		ServerErrorResponse(w)
+	}
+	w.WriteHeader(http.StatusUnauthorized)
+		w.Write(dat)
+}
