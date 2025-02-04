@@ -54,3 +54,20 @@ func (q *Queries) GetTokenByToken(ctx context.Context, token string) (RefreshTok
 	)
 	return i, err
 }
+
+const updateRefreshToken = `-- name: UpdateRefreshToken :exec
+UPDATE refresh_tokens
+SET expires_at = $1 , updated_at = $2 
+WHERE token = $3
+`
+
+type UpdateRefreshTokenParams struct {
+	ExpiresAt time.Time
+	UpdatedAt time.Time
+	Token     string
+}
+
+func (q *Queries) UpdateRefreshToken(ctx context.Context, arg UpdateRefreshTokenParams) error {
+	_, err := q.db.ExecContext(ctx, updateRefreshToken, arg.ExpiresAt, arg.UpdatedAt, arg.Token)
+	return err
+}
