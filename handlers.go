@@ -382,7 +382,9 @@ func (cfg *apiConfig) refreshTokenHandler(w http.ResponseWriter, r *http.Request
 		unauthorizedErrorResponse(w, "refresh token expired")
 		return
 	}
-
+	if refreshToken.RevokedAt !=nil {
+		
+	}
 	accessToken, err := auth.MakeJWT(refreshToken.UserID, cfg.envi.jwtSecret)
 	if err != nil {
 		slog.Error("error creating access token", "err", err)
