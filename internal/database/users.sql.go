@@ -7,9 +7,6 @@ package database
 
 import (
 	"context"
-	"time"
-
-	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -45,24 +42,18 @@ func (q *Queries) DeleteAllUsers(ctx context.Context) error {
 }
 
 const findUserByEmail = `-- name: FindUserByEmail :one
-SELECT id, created_at,updated_at,email FROM users WHERE email = $1
+SELECT id, created_at,updated_at,email,hashed_password FROM users WHERE email = $1
 `
 
-type FindUserByEmailRow struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Email     string
-}
-
-func (q *Queries) FindUserByEmail(ctx context.Context, email string) (FindUserByEmailRow, error) {
+func (q *Queries) FindUserByEmail(ctx context.Context, email string) (User, error) {
 	row := q.db.QueryRowContext(ctx, findUserByEmail, email)
-	var i FindUserByEmailRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Email,
+		&i.HashedPassword,
 	)
 	return i, err
 }

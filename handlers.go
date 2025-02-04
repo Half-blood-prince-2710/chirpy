@@ -273,5 +273,8 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	if err!=nil{
 		badRequestErrorResponse(w,http.StatusBadRequest,errr)
 	}
-	auth.CheckPasswordHash()
+	user,err:=cfg.db.FindUserByEmail(r.Context(),input.Email)
+	dbErrorReponse(err,w)
+
+	auth.CheckPasswordHash(input.Password,user.)
 }

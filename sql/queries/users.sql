@@ -6,4 +6,4 @@ VALUES ($1,$2) RETURNING *;
 DELETE FROM users;
 
 -- name: FindUserByEmail :one
-SELECT id, created_at,updated_at,email FROM users WHERE email = $1;
+SELECT id, created_at,updated_at,email,hashed_password FROM users WHERE email = $1;
