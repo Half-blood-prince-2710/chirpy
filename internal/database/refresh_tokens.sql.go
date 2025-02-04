@@ -7,7 +7,7 @@ package database
 
 import (
 	"context"
-	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -20,7 +20,7 @@ VALUES ($1,$2,$3) RETURNING token, created_at, updated_at, user_id, expires_at, 
 type CreateRefreshTokenParams struct {
 	Token     string
 	UserID    uuid.UUID
-	ExpiresAt sql.NullTime
+	ExpiresAt time.Time
 }
 
 func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error) {
