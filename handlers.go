@@ -282,7 +282,7 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Email string `json:"email"`
 		Password string `json:"password"`
-		Expires int `json:"expires_in_seconds"`
+		// Expires int `json:"expires_in_seconds"`
 	}
 	type output struct {
 		ID uuid.UUID `json:"id"`
@@ -290,6 +290,7 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt time.Time `json:"updated_at"`
 		Email string `json:"email"`
 		Token string `json:"token"`
+		RefreshToken string `json:"refresh_token"`
 	}
 	
 	
@@ -302,9 +303,9 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// fmt.Print("login expires 1: ",input.Expires,"\n")
 	//validating expire input
-	if input.Expires ==0 || input.Expires> 60*60 {
-		input.Expires = 3600 
-	}
+	// if input.Expires ==0 || input.Expires> 60*60 {
+	// 	input.Expires = 3600 
+	// }
 
 	user,err:=cfg.db.FindUserByEmail(r.Context(),input.Email)
 	if err!=nil {
@@ -318,10 +319,16 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// fmt.Print("expireins login handler: ", input.Expires,"\n")
-	token , err:= auth.MakeJWT(user.ID,cfg.envi.jwtSecret,time.Duration(input.Expires * int(time.Second)))
+	token , err:= auth.MakeJWT(user.ID,cfg.envi.jwtSecret) //,time.Duration(input.Expires * int(time.Second))
 	if err!=nil {
 		unauthorizedErrorResponse(w,err.Error())
 		slog.Error("make jwt: ","err: ",err)
+		return
+	}
+	refreshToken ,err := auth.MakeRefreshToken()
+	if err!=nil{
+		slog.Error("error making refresh token ","err",err)
+		ServerErrorResponse(w)
 		return
 	}
 	resUser:=  output{
@@ -330,6 +337,7 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: user.UpdatedAt,
 		Email: user.Email,
 		Token: token,
+		RefreshToken: refreshToken,
 	}
 
 	w.WriteHeader(http.StatusOK)
