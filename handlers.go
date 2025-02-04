@@ -364,10 +364,42 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func (cfg *apiConfig) refreshTokenHandler(w http.ResponseWriter, r *http.Request) {
-	token , err :=auth.GetBearerToken(r.Header)
-	if err!=nil {
-		unauthorizedErrorResponse(w,"no refresh token")
-		return 
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		unauthorizedErrorResponse(w, "no refresh token")
+		return
 	}
-	 
+
+	refreshToken, err := cfg.db.GetTokenByToken(r.Context(), token)
+	if err != nil {
+		slog.Error("error looking up refresh token in DB", "err", err)
+		dbErrorReponse(err, w)
+		return
+	}
+
+	if refreshToken.ExpiresAt.Before(time.Now()) {
+		slog.Warn("refresh token has expired")
+		unauthorizedErrorResponse(w, "refresh token expired")
+		return
+	}
+
+	accessToken, err := auth.MakeJWT(refreshToken.UserID, cfg.envi.jwtSecret)
+	if err != nil {
+		slog.Error("error creating access token", "err", err)
+		unauthorizedErrorResponse(w, "error creating access token")
+		return
+	}
+
+	response := struct {
+		Token string `json:"token"`
+	}{
+		Token: accessToken,
+	}
+
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		slog.Error("error encoding JSON response", "err", err)
+		ServerErrorResponse(w)
+		return
+	}
 }
