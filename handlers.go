@@ -104,6 +104,21 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 
+func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
