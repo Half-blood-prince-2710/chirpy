@@ -337,7 +337,13 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt: time.Now().Add(time.Hour*24*60),
 
 	}
-	cfg.db.CreateRefreshToken(r.Context(),data)
+	_,err =cfg.db.CreateRefreshToken(r.Context(),data)
+	if err!=nil {
+		slog.Error("creating refresh at db : ","err",err)
+		dbErrorReponse(err,w)
+		return
+	}
+
 	resUser:=  output{
 		ID: user.ID,
 		CreatedAt: user.CreatedAt,
