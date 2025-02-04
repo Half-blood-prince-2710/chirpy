@@ -22,13 +22,14 @@ func (cfg *apiConfig)  healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {
-	if cfg.env != "dev"{
+	if cfg.envi.mode != "dev"{
 		w.WriteHeader(http.StatusForbidden)
 	}
 	cfg.fileserverHits.Store(0)
 	err:=cfg.db.DeleteAllUsers(r.Context())
 	if err!=nil{
 		ServerErrorResponse(w)
+		return
 	}
 }
 
@@ -62,32 +63,39 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		UpdatedAt time.Time `json:"updated_at"`
 		Email string `json:"email"`
 	}
-	var errr errror
+	
 	w.Header().Set("Content-Type","application/json")
 	err:= json.NewDecoder(r.Body).Decode(&input)
 	if err!=nil{
-		badRequestErrorResponse(w,http.StatusBadRequest,errr)
+		badRequestErrorResponse(w)
+		return
 	}
 	hash,err:=auth.HashPassword(input.Password)
 	if err!=nil{
 		ServerErrorResponse(w)
+		return
 	}
 	dat:=database.CreateUserParams{
 		Email: input.Email,
 		HashedPassword: hash,
 	}
-	slog.Info("email",input.Email)
+	slog.Info("Response: ","email",input.Email)
 	user,err:= cfg.db.CreateUser(r.Context(),dat)
 	if err!=nil{
 		ServerErrorResponse(w)
+		return
 	}
 	output.ID = user.ID
 	output.CreatedAt = user.CreatedAt
 	output.UpdatedAt = user.UpdatedAt
 	output.Email = user.Email
-	slog.Info("user",user)
+	slog.Info("Response: ","user",user)
 
 	data, err:= json.Marshal(output)
+	if err!=nil {
+		ServerErrorResponse(w)
+		return
+	}
 	w.WriteHeader(http.StatusCreated)
 	w.Write(data)
 
@@ -110,9 +118,9 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 	var er struct{
 		Error  string `json:"error"`
 	}
-	var success struct {
-		Valid bool
-	}	
+	// var success struct {
+	// 	Valid bool
+	// }	
 	
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err!=nil {
@@ -151,16 +159,15 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 		Body: input.Body,
 		UserID: input.UserId,
 	}
-	slog.Info("chirp",ch)
+	slog.Info("Response: ","chirp",ch)
 	chirp , err:= cfg.db.CreateChirp(r.Context(),ch)
 	if err!=nil{
-		slog.Error("err: ",err)
-		ServerErrorResponse(w)
+		dbErrorReponse(err,w)
 		return
 	}
 	var output struct {
 		ID uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at`
+		CreatedAt time.Time `json:"created_at"`
 		UpdatedAt time.Time `json:"updated_at"`
 		Body string `json:"body"`
 		UserID uuid.UUID `json:"user_id"`
@@ -172,7 +179,7 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 	output.UserID = chirp.UserID
 	w.WriteHeader(http.StatusCreated)
 		w.Header().Set("Content-type","application/json")
-		success.Valid = true
+		// success.Valid = true
 		dat,err := json.Marshal(output)
 		if err != nil {
 			log.Printf("Error marshalling JSON: %s", err)
@@ -185,7 +192,12 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 
 func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	chirps,err:= cfg.db.GetAllChirps(r.Context())
-	dbErrorReponse(err,w)
+	if err!=nil{
+		dbErrorReponse(err,w)
+		return
+
+	}
+	
 
 	w.WriteHeader(http.StatusOK)
 	data,err := json.Marshal(chirps)
@@ -202,11 +214,12 @@ func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 	id:=r.PathValue("id")
 	idx, err:=uuid.Parse(id)
 	if err!=nil{
-		slog.Error("err","err parsing uuid")
+		slog.Error("err parsing uuid")
 		ServerErrorResponse(w)
+		return
 	}
 	chirp,err:= cfg.db.GetOneChirp(r.Context(),idx)
-	slog.Info("chirp",chirp)
+	slog.Info("Response: ","chirp",chirp)
 	dbErrorReponse(err,w)
 
 	w.WriteHeader(http.StatusOK)
@@ -260,41 +273,59 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Email string `json:"email"`
 		Password string `json:"password"`
+		Expires int `json:"expires_in_seconds"`
 	}
 	type output struct {
 		ID uuid.UUID `json:"id"`
 		CreatedAt time.Time `json:"created_at"`
 		UpdatedAt time.Time `json:"updated_at"`
 		Email string `json:"email"`
+		Token string `json:"token"`
 	}
 	
-	var errr errror
+	
 	
 	w.Header().Set("Content-Type","application/json")
 	err:= json.NewDecoder(r.Body).Decode(&input)
 	if err!=nil{
-		badRequestErrorResponse(w,http.StatusBadRequest,errr)
+		badRequestErrorResponse(w)
+		return
 	}
+	//validating expire input
+	if input.Expires ==0 && input.Expires> 60*60 {
+		input.Expires = 60*60
+	}
+
 	user,err:=cfg.db.FindUserByEmail(r.Context(),input.Email)
 	if err!=nil {
-		unauthorizedErrorResponse(errr,w)
+		unauthorizedErrorResponse(w,err.Error())
+		return
 	}
 
 	err =auth.CheckPasswordHash(input.Password,user.HashedPassword)
 	if err!=nil {
-		unauthorizedErrorResponse(errr,w)
+		unauthorizedErrorResponse(w,err.Error())
+		return
+	}
+	token , err:= auth.MakeJWT(user.ID,cfg.envi.jwtSecret,time.Duration(input.Expires))
+	if err!=nil {
+		unauthorizedErrorResponse(w,err.Error())
+		slog.Error("make jwt: ","err: ",err)
+		return
 	}
 	resUser:=  output{
 		ID: user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		Email: user.Email,
+		Token: token,
 	}
 
 	w.WriteHeader(http.StatusOK)
 	dat,err:= json.Marshal(resUser)
 	if err!=nil {
 		ServerErrorResponse(w)
+		return
 	}
 	w.Write(dat)
 }

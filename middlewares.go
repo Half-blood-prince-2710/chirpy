@@ -1,8 +1,12 @@
 package main
 
 import (
-	"log"
+	// "log"
+	"context"
+	"log/slog"
 	"net/http"
+
+	"github.com/half-blood-prince-2710/chirpy/internal/auth"
 )
 
 
@@ -14,9 +18,30 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	})
 }
 
-func middlewareLog(next http.Handler) http.Handler {
+// func middlewareLog(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		log.Printf("%s %s", r.Method, r.URL.Path)
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
+
+
+func (cfg *apiConfig) authenticateMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s", r.Method, r.URL.Path)
-		next.ServeHTTP(w, r)
-	})
+		token , err:=auth.GetBearerToken(r.Header)
+		if err!=nil {
+			unauthorizedErrorResponse(w,err.Error())
+			slog.Error("Error: get bearer token ","err",err)
+		}
+		id,err:=auth.ValidateJWT(token,cfg.envi.jwtSecret)
+		if err!=nil {
+			unauthorizedErrorResponse(w, err.Error())
+		}
+
+		ctx := context.WithValue(r.Context(), "userID", id)
+		req := r.WithContext(ctx)
+		next.ServeHTTP(w,req)
+	}) 
+
+		
 }

@@ -6,38 +6,41 @@ import (
 	"net/http"
 )
 
-type errror struct {
-		msg string `json="error"`
+type errorRes struct {
+		Msg string `json:"error"`
 	}
 
-type envelope []map[string]any
+// type envelope []map[string]any
 
 func ServerErrorResponse(w http.ResponseWriter){
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Write([]byte("Internal server error"))
+	
 }
-func badRequestErrorResponse(w http.ResponseWriter,  status int , errr errror){
+func badRequestErrorResponse(w http.ResponseWriter){
+
 	w.WriteHeader(http.StatusBadRequest)
-	errr.msg = `Bad Request`
-	dat,err:=json.Marshal(errr)
+	errRes := errorRes{Msg:"Bad Request"}
+	dat,err:=json.Marshal(errRes)
 	if err!=nil{
 		ServerErrorResponse(w)
 	}
 	w.Write(dat)
 }
 func dbErrorReponse(err error,w http.ResponseWriter) {
-	if err!=nil{
-		slog.Error("err: ",err)
+	
+		slog.Error("Error in db: ","err: ",err)
 		ServerErrorResponse(w)
-		return
-	}
+	
 }
 
-func unauthorizedErrorResponse(errr errror,w http.ResponseWriter) {
-	errr.msg = "Incorrect Email or password"
+func unauthorizedErrorResponse(w http.ResponseWriter,msg string) {
+	
+	errr :=  errorRes{Msg:msg}
 	dat,err:=json.Marshal(errr)
 	if err!=nil {
 		ServerErrorResponse(w)
+		return
 	}
 	w.WriteHeader(http.StatusUnauthorized)
 		w.Write(dat)

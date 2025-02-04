@@ -12,11 +12,14 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
-
+type env struct {
+	mode string
+	jwtSecret string
+}
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	db              *database.Queries // Initialize db as a pointer to database.Queries
-	env string
+	envi env
 }
 
 func main() {
@@ -27,12 +30,14 @@ func main() {
 	}
 
 	dbURL := os.Getenv("DB_URL")
-	slog.Info("db_url", dbURL)
+	jwtSecret := os.Getenv("JWT_SECRET")
+	mode:= os.Getenv("PLATFORM")
+	slog.Info("Response: ","db_url", dbURL)
 
 	// Database connection
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		slog.Error("Error connecting to database:", err)
+		slog.Error("Error connecting to database: ", "err",err)
 	}
 	defer db.Close()
 
@@ -41,7 +46,10 @@ func main() {
 	// Initialize the apiConfig object and assign the Queries object to db
 	apiCfg := apiConfig{
 		db: database.New(db),
-		env: os.Getenv("PLATFORM"), // Initialize Queries with the database connection
+		envi: env{
+			mode: mode,
+			jwtSecret: jwtSecret,
+		} ,
 	}
 
 	// HTTP router setup
