@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     user_id UUID NOT NULL,
-    expires_at TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
     revoked_at TIMESTAMP,
     FOREIGN KEY (user_id)
     REFERENCES users(id)
