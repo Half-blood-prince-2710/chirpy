@@ -12,3 +12,8 @@ SELECT id, created_at,updated_at,email,hashed_password FROM users WHERE email = 
 UPDATE users 
 SET email = $1 , hashed_password = $2, updated_at = $3
 where id = $4 RETURNING id, created_at,updated_at,email;
+
+-- name: UpdateChirpRed :one
+UPDATE users
+SET is_chirpy_red = $1 , updated_at = $2
+WHERE id = $3;
