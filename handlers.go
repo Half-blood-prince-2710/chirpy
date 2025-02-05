@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"regexp"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -103,11 +104,11 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 		Password string `json:"password"`
 	}
 	var output struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email     string    `json:"email"`
-		IsChirpyRed  bool		`json:"is_chirpy_red"`
+		ID          uuid.UUID `json:"id"`
+		CreatedAt   time.Time `json:"created_at"`
+		UpdatedAt   time.Time `json:"updated_at"`
+		Email       string    `json:"email"`
+		IsChirpyRed bool      `json:"is_chirpy_red"`
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -155,11 +156,11 @@ func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) 
 		Password string `json:"password"`
 	}
 	var output struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email     string    `json:"email"`
-		IsChirpyRed  bool		`json:"is_chirpy_red"`
+		ID          uuid.UUID `json:"id"`
+		CreatedAt   time.Time `json:"created_at"`
+		UpdatedAt   time.Time `json:"updated_at"`
+		Email       string    `json:"email"`
+		IsChirpyRed bool      `json:"is_chirpy_red"`
 	}
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewDecoder(r.Body).Decode(&input)
@@ -355,39 +356,44 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 
 func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 
-	query:=r.URL.Query()
-	authorID:= query.Get("author_id")
+	query := r.URL.Query()
+	authorID := query.Get("author_id")
+	so := query.Get("sort")
 	if authorID == "" {
 		chirps, err := cfg.db.GetAllChirps(r.Context())
-	if err != nil {
-		dbErrorReponse(err, w)
-		return
+		if err != nil {
+			dbErrorReponse(err, w)
+			return
 
-	}
-
-	w.WriteHeader(http.StatusOK)
-	data, err := json.MarshalIndent(chirps, " ", "\t")
-	if err != nil {
-		log.Printf("Error marshalling JSON: %s", err)
-		w.WriteHeader(500)
+		}
+		if so == "desc" {
+			sort.Slice(chirps, func(i, j int) bool { return chirps[i].CreatedAt.After(chirps[j].CreatedAt) })
+		}
+		w.WriteHeader(http.StatusOK)
+		data, err := json.MarshalIndent(chirps, " ", "\t")
+		if err != nil {
+			log.Printf("Error marshalling JSON: %s", err)
+			w.WriteHeader(500)
+			return
+		}
+		w.Write(data)
 		return
 	}
-	w.Write(data)
-	return
-	}
-	id,err:=uuid.Parse(authorID)
-	if err!=nil {
+	id, err := uuid.Parse(authorID)
+	if err != nil {
 		slog.Error("err parsing id")
 		ServerErrorResponse(w)
 		return
 	}
-	chirps, err := cfg.db.GetChirpsByAuthor(r.Context(),id)
+	chirps, err := cfg.db.GetChirpsByAuthor(r.Context(), id)
 	if err != nil {
 		dbErrorReponse(err, w)
 		return
 
 	}
-	
+	if so == "desc" {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].CreatedAt.After(chirps[j].CreatedAt) })
+	}
 	data, err := json.MarshalIndent(chirps, " ", "\t")
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)
@@ -396,7 +402,7 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
-	
+
 }
 
 func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
@@ -526,7 +532,7 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		Email        string    `json:"email"`
 		Token        string    `json:"token"`
 		RefreshToken string    `json:"refresh_token"`
-		IsChirpyRed  bool		`json:"is_chirpy_red"`
+		IsChirpyRed  bool      `json:"is_chirpy_red"`
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -584,7 +590,7 @@ func (cfg *apiConfig) loginHandler(w http.ResponseWriter, r *http.Request) {
 		Email:        user.Email,
 		Token:        token,
 		RefreshToken: refreshToken,
-		IsChirpyRed: user.IsChirpyRed,
+		IsChirpyRed:  user.IsChirpyRed,
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -693,40 +699,39 @@ func (cfg *apiConfig) webhookHandler(w http.ResponseWriter, r *http.Request) {
 		} `json:"data"`
 	}
 	w.Header().Set("Content-Type", "application/json")
-	apiKey,err:=auth.GetAPIKey(r.Header)
-	if err!=nil{
+	apiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
 		slog.Error("webhook: no api key")
-		unauthorizedErrorResponse(w,err.Error())
+		unauthorizedErrorResponse(w, err.Error())
 		return
 	}
 	if apiKey != cfg.envi.polkaKey {
 		slog.Error("webhook: wrong apikey")
-		unauthorizedErrorResponse(w,"wrong apikey")
+		unauthorizedErrorResponse(w, "wrong apikey")
 		return
 	}
-
 
 	err = json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		slog.Error("webhook","err",err)
+		slog.Error("webhook", "err", err)
 		badRequestErrorResponse(w)
 		return
 	}
-	
+
 	if input.Event != "user.upgraded" {
 		slog.Error("webhook: no user upgraded")
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	data:= database.UpdateChirpRedParams{
+	data := database.UpdateChirpRedParams{
 		IsChirpyRed: true,
-		UpdatedAt: time.Now(),
-		ID: input.Data.UserID,
+		UpdatedAt:   time.Now(),
+		ID:          input.Data.UserID,
 	}
-	_ ,err =cfg.db.UpdateChirpRed(r.Context(),data)
-	if err!=nil {
-		slog.Error("webhook","err",err)
-		dbErrorReponse(err,w)
+	_, err = cfg.db.UpdateChirpRed(r.Context(), data)
+	if err != nil {
+		slog.Error("webhook", "err", err)
+		dbErrorReponse(err, w)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
