@@ -358,10 +358,7 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 	query:=r.URL.Query()
 	authorID:= query.Get("author_id")
 	if authorID == "" {
-		
-	}
-
-	chirps, err := cfg.db.GetAllChirps(r.Context())
+		chirps, err := cfg.db.GetAllChirps(r.Context())
 	if err != nil {
 		dbErrorReponse(err, w)
 		return
@@ -376,6 +373,30 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(data)
+	return
+	}
+	id,err:=uuid.Parse(authorID)
+	if err!=nil {
+		slog.Error("err parsing id")
+		ServerErrorResponse(w)
+		return
+	}
+	chirps, err := cfg.db.GetChirpsByAuthor(r.Context(),id)
+	if err != nil {
+		dbErrorReponse(err, w)
+		return
+
+	}
+	
+	data, err := json.MarshalIndent(chirps, " ", "\t")
+	if err != nil {
+		log.Printf("Error marshalling JSON: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+	
 }
 
 func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
