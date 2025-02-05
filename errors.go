@@ -30,6 +30,7 @@ func badRequestErrorResponse(w http.ResponseWriter){
 func dbErrorReponse(err error,w http.ResponseWriter) {
 	
 		slog.Error("Error in db: ","err: ",err)
+		w.WriteHeader(404)
 		ServerErrorResponse(w)
 	
 }

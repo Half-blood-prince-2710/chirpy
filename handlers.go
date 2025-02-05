@@ -323,7 +323,10 @@ func (cfg *apiConfig) deleteChirpHandler(w http.ResponseWriter, r *http.Request)
 		badRequestErrorResponse(w)
 		return
 	}
-	
+	err:=cfg.db.DeleteChirp(r.Context(),id)
+	if err!=nil {
+		dbErrorReponse(err,w)
+	}
 }
 
 
