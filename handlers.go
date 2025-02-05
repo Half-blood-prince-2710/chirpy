@@ -136,7 +136,7 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 	output.UpdatedAt = user.UpdatedAt
 	output.Email = user.Email
 	output.IsChirpyRed = user.IsChirpyRed
-	
+
 	slog.Info("Response: ", "user", user)
 
 	data, err := json.MarshalIndent(output, " ", "\t")
@@ -354,6 +354,13 @@ func (cfg *apiConfig) createChirpHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
+
+	query:=r.URL.Query()
+	authorID:= query.Get("author_id")
+	if authorID == "" {
+		
+	}
+
 	chirps, err := cfg.db.GetAllChirps(r.Context())
 	if err != nil {
 		dbErrorReponse(err, w)
@@ -665,13 +672,26 @@ func (cfg *apiConfig) webhookHandler(w http.ResponseWriter, r *http.Request) {
 		} `json:"data"`
 	}
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewDecoder(r.Body).Decode(&input)
+	apiKey,err:=auth.GetAPIKey(r.Header)
+	if err!=nil{
+		slog.Error("webhook: no api key")
+		unauthorizedErrorResponse(w,err.Error())
+		return
+	}
+	if apiKey != cfg.envi.polkaKey {
+		slog.Error("webhook: wrong apikey")
+		unauthorizedErrorResponse(w,"wrong apikey")
+		return
+	}
+
+
+	err = json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
 		slog.Error("webhook","err",err)
 		badRequestErrorResponse(w)
 		return
 	}
-
+	
 	if input.Event != "user.upgraded" {
 		slog.Error("webhook: no user upgraded")
 		w.WriteHeader(http.StatusNoContent)

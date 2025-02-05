@@ -15,6 +15,7 @@ import (
 type env struct {
 	mode string
 	jwtSecret string
+	polkaKey string
 }
 type apiConfig struct {
 	fileserverHits atomic.Int32
@@ -32,6 +33,7 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 	jwtSecret := os.Getenv("JWT_SECRET")
 	mode:= os.Getenv("PLATFORM")
+	polkaKey := os.Getenv("POLKA_KEY")
 	slog.Info("Response: ","db_url", dbURL)
 
 	// Database connection
@@ -49,6 +51,7 @@ func main() {
 		envi: env{
 			mode: mode,
 			jwtSecret: jwtSecret,
+			polkaKey: polkaKey,
 		} ,
 	}
 
