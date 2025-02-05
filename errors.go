@@ -46,3 +46,14 @@ func unauthorizedErrorResponse(w http.ResponseWriter,msg string) {
 	w.WriteHeader(http.StatusUnauthorized)
 		w.Write(dat)
 }
+func forbiddenResponse(w http.ResponseWriter,msg string) {
+	
+	errr :=  errorRes{Msg:msg}
+	dat,err:=json.Marshal(errr)
+	if err!=nil {
+		ServerErrorResponse(w)
+		return
+	}
+	w.WriteHeader(http.StatusForbidden)
+		w.Write(dat)
+}

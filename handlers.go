@@ -322,14 +322,32 @@ func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) deleteChirpHandler(w http.ResponseWriter, r *http.Request) {
-	id , ok := r.Context().Value("userID").(uuid.UUID)
+	chirpID,err:=uuid.Parse(r.PathValue("id"))
+	if err!=nil{
+		slog.Error("delete chirp","err",err)
+		unauthorizedErrorResponse(w,"userid not found")
+		return
+	}
+
+	userID , ok := r.Context().Value("userID").(uuid.UUID)
 	w.Header().Set("Content-Type","application/json")
 	if !ok {
 		slog.Error("delete chirp : userid not found in context")
 		badRequestErrorResponse(w)
 		return
 	}
-	err:=cfg.db.DeleteChirp(r.Context(),id)
+	chirp,err:=cfg.db.GetOneChirp(r.Context(),chirpID)
+	if err!=nil {
+		slog.Error("delete chirp: ","err",err)
+		dbErrorReponse(err,w)
+		return
+	}
+	if chirp.UserID != userID {
+		slog.Error("delete chirp","err",err)
+		forbiddenResponse(w,"error: forbidden")
+		return 
+	}
+	err =cfg.db.DeleteChirp(r.Context(),chirpID)
 	if err!=nil {
 		slog.Error("delete chirp: ","err",err)
 		dbErrorReponse(err,w)
