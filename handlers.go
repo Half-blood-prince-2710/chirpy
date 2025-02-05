@@ -295,7 +295,7 @@ func (cfg *apiConfig) getChirpsHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
-	id:=r.PathValue("id")
+	id :=r.PathValue("id")
 	idx, err:=uuid.Parse(id)
 	if err!=nil{
 		slog.Error("err parsing uuid")
@@ -304,7 +304,12 @@ func (cfg *apiConfig) getChirpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	chirp,err:= cfg.db.GetOneChirp(r.Context(),idx)
 	slog.Info("Response: ","chirp",chirp)
-	dbErrorReponse(err,w)
+	if err!=nil {
+		slog.Error("get chirp: ","err",err)
+		dbErrorReponse(err,w)
+		return 
+	}
+	
 
 	w.WriteHeader(http.StatusOK)
 	data,err := json.MarshalIndent(chirp," ","\t")
@@ -331,7 +336,7 @@ func (cfg *apiConfig) deleteChirpHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-	
+
 }
 
 
