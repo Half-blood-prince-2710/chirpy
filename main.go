@@ -73,6 +73,7 @@ func main() {
 	mux.HandleFunc("POST /api/chirps",apiCfg.authenticateMiddleware(apiCfg.createChirpHandler))
 	mux.HandleFunc("GET /api/chirps",apiCfg.getChirpsHandler)
 	mux.HandleFunc("GET /api/chirps/{id}",apiCfg.getChirpHandler)
+	mux.HandleFunc("DELETE /api/chirps/{id}",apiCfg.)
 
 	// Start HTTP server
 	srv := &http.Server{
