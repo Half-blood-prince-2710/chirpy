@@ -67,7 +67,7 @@ func main() {
 
 	// user routes
 	mux.HandleFunc("POST /api/users", apiCfg.createUserHandler)
-	mux.HandleFunc("PUT /api/users",apiCfg.updateUserHandler)
+	mux.HandleFunc("PUT /api/users",apiCfg.authenticateMiddleware(apiCfg.updateUserHandler))
 
 	//chirps routes
 	mux.HandleFunc("POST /api/chirps",apiCfg.authenticateMiddleware(apiCfg.createChirpHandler))

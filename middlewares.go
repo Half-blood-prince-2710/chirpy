@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "log"
 	"context"
 	"fmt"
 	"log/slog"
@@ -32,7 +31,7 @@ func (cfg *apiConfig) authenticateMiddleware(next http.HandlerFunc) http.Handler
 		// fmt.Print("entering auth middle\n")
 		token , err:=auth.GetBearerToken(r.Header)
 		if err!=nil {
-			fmt.Errorf("Error: %w \n",err)
+			slog.Error("authenticate middleware : " ,"err",err)
 			unauthorizedErrorResponse(w,err.Error())
 			slog.Error("Error: get bearer token ","err",err)
 			return 
@@ -40,7 +39,8 @@ func (cfg *apiConfig) authenticateMiddleware(next http.HandlerFunc) http.Handler
 		// fmt.Print("entering auth middle\ntoken:",token,"\n")
 		id,err:=auth.ValidateJWT(token,cfg.envi.jwtSecret)
 		if err!=nil {
-			fmt.Errorf("Error: %w \n",err)
+			slog.Error("authenticate middleware : " ,"err",err)
+			
 			unauthorizedErrorResponse(w, err.Error())
 			return 
 		}

@@ -105,7 +105,66 @@ func (cfg *apiConfig) createUserHandler(w http.ResponseWriter, r *http.Request) 
 
 
 func (cfg *apiConfig) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Email string `json:"email"`
+		Password string `json:"password"`
+	}
+	var output struct {
+		ID uuid.UUID `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+		Email string `json:"email"`
+	}
+	w.Header().Set("Content-Type","application/json")
+	err:= json.NewDecoder(r.Body).Decode(&input)
+	if err!=nil{
+		slog.Error("update user: error decoding input")
+		badRequestErrorResponse(w)
+		return
+	}
+	hash,err:=auth.HashPassword(input.Password)
+	if err!=nil{
+		slog.Error("update user: error hashing password","err",err)
+		ServerErrorResponse(w)
+		return
+	}
 	
+	id, ok := r.Context().Value("userID").(uuid.UUID)
+	slog.Info("userid: ","id",id)
+	if !ok {
+		slog.Error("userid not found in context")
+		badRequestErrorResponse(w)
+		return
+	}
+	 
+	 
+	
+	data := database.UpdateUserParams{
+		Email: input.Email ,
+		HashedPassword: hash,
+		UpdatedAt: time.Now(),
+		ID: id,
+	}
+		user,err:=cfg.db.UpdateUser(r.Context(),data)
+		if err!=nil {
+			slog.Error("update user: user not updated")
+			dbErrorReponse(err,w)
+			return
+		}
+
+		output.ID = user.ID
+		output.Email = user.Email
+		output.CreatedAt = user.CreatedAt
+		output.UpdatedAt = user.UpdatedAt
+
+		dat, err:=json.Marshal(output)
+		if err!=nil {
+			slog.Error("update user: error marshaling output","err",err)
+			ServerErrorResponse(w)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(dat)
 }
 
 
